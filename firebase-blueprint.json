@@ -1,0 +1,170 @@
+{
+  "entities": {
+    "StoreThemeListing": {
+      "title": "StoreThemeListing",
+      "description": "A custom JISR UI theme designed and published to the Theme Store as Free ($0) or Paid ($1).",
+      "type": "object",
+      "properties": {
+        "creatorId": { "type": "string" },
+        "creatorName": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "backgroundHex": { "type": "integer" },
+        "iconHex": { "type": "integer" },
+        "lightHex": { "type": "integer" },
+        "lightEnabled": { "type": "boolean" },
+        "priceUsd": { "type": "integer" },
+        "isPublished": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "creatorId", "creatorName", "title", "description",
+        "backgroundHex", "iconHex", "lightHex", "lightEnabled",
+        "priceUsd", "isPublished", "createdAt", "updatedAt"
+      ]
+    },
+    "AcquiredThemeRecord": {
+      "title": "AcquiredThemeRecord",
+      "description": "A store theme saved or acquired in the user's personal library.",
+      "type": "object",
+      "properties": {
+        "themeId": { "type": "string" },
+        "title": { "type": "string" },
+        "priceUsd": { "type": "integer" },
+        "backgroundHex": { "type": "integer" },
+        "iconHex": { "type": "integer" },
+        "lightHex": { "type": "integer" },
+        "lightEnabled": { "type": "boolean" },
+        "acquiredAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "themeId", "title", "priceUsd", "backgroundHex", "iconHex", "lightHex", "lightEnabled", "acquiredAt"
+      ]
+    },
+    "AccountDirectoryEntry": {
+      "title": "AccountDirectoryEntry",
+      "description": "Authenticated ID lookup record linking a public JISR ID to its ECDH and ECDSA public keys.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "jesrId": { "type": "string" },
+        "displayName": { "type": "string" },
+        "ecdhPublicKey": { "type": "string" },
+        "signingPublicKey": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "jesrId", "displayName", "ecdhPublicKey", "signingPublicKey", "updatedAt"]
+    },
+    "PrivateIdentityRecord": {
+      "title": "PrivateIdentityRecord",
+      "description": "Owner-only encrypted identity keys, profile images, and settings.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "jesrId": { "type": "string" },
+        "encryptedKeyBundle": { "type": "string" },
+        "ecdhPublicKey": { "type": "string" },
+        "signingPublicKey": { "type": "string" },
+        "displayName": { "type": "string" },
+        "avatarBase64": { "type": "string" },
+        "coverBase64": { "type": "string" },
+        "language": { "type": "string" },
+        "globalDistanceAllowed": { "type": "boolean" },
+        "globalMutualFriendsAllowed": { "type": "boolean" },
+        "nearbyVisible": { "type": "boolean" },
+        "appearanceMode": { "type": "string" },
+        "cinematicThemeId": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "jesrId", "encryptedKeyBundle", "ecdhPublicKey", "signingPublicKey", "displayName", "updatedAt"]
+    },
+    "CloudFriendRecord": {
+      "title": "CloudFriendRecord",
+      "description": "Synced friend entry under owner's private collection.",
+      "type": "object",
+      "properties": {
+        "jesrId": { "type": "string" },
+        "displayName": { "type": "string" },
+        "publicKeyBase64": { "type": "string" },
+        "status": { "type": "string" },
+        "addedAt": { "type": "integer" },
+        "isMuted": { "type": "boolean" },
+        "isBlocked": { "type": "boolean" },
+        "unblockedAwaitingResume": { "type": "boolean" },
+        "localResumeApproved": { "type": "boolean" },
+        "peerResumeApproved": { "type": "boolean" },
+        "distanceConsentEnabled": { "type": "boolean" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["jesrId", "displayName", "publicKeyBase64", "status", "addedAt", "updatedAt"]
+    },
+    "CloudConversationRecord": {
+      "title": "CloudConversationRecord",
+      "description": "Synced conversation metadata under owner's private collection.",
+      "type": "object",
+      "properties": {
+        "convId": { "type": "string" },
+        "peerName": { "type": "string" },
+        "lastMessageText": { "type": "string" },
+        "lastMessageTime": { "type": "integer" },
+        "unreadCount": { "type": "integer" },
+        "hopsDistance": { "type": "integer" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["convId", "peerName", "lastMessageText", "lastMessageTime", "unreadCount", "hopsDistance", "updatedAt"]
+    },
+    "CloudMessageRecord": {
+      "title": "CloudMessageRecord",
+      "description": "Synced message history entry under owner's private collection.",
+      "type": "object",
+      "properties": {
+        "messageId": { "type": "string" },
+        "conversationId": { "type": "string" },
+        "senderId": { "type": "string" },
+        "recipientId": { "type": "string" },
+        "text": { "type": "string" },
+        "timestamp": { "type": "integer" },
+        "status": { "type": "string" },
+        "isIncoming": { "type": "boolean" },
+        "ttl": { "type": "integer" },
+        "hopCount": { "type": "integer" },
+        "isBroadcast": { "type": "boolean" },
+        "isSos": { "type": "boolean" },
+        "attachmentName": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["messageId", "conversationId", "senderId", "recipientId", "text", "timestamp", "status", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/store_themes/{themeId}": {
+      "schema": { "$ref": "#/entities/StoreThemeListing" },
+      "description": "Published custom UI themes listed in the JISR Theme Store."
+    },
+    "/accounts/{jesrId}": {
+      "schema": { "$ref": "#/entities/AccountDirectoryEntry" },
+      "description": "Exact-ID public key & display name lookup for JISR users (list disabled)."
+    },
+    "/users/{userId}/acquired_themes/{themeId}": {
+      "schema": { "$ref": "#/entities/AcquiredThemeRecord" },
+      "description": "Themes saved or acquired by an authenticated user."
+    },
+    "/users/{userId}/private/{docId}": {
+      "schema": { "$ref": "#/entities/PrivateIdentityRecord" },
+      "description": "Owner-only encrypted identity keypair bundle, profile & preferences."
+    },
+    "/users/{userId}/friends/{friendId}": {
+      "schema": { "$ref": "#/entities/CloudFriendRecord" },
+      "description": "Owner-only backed-up friend list & relationship privacy state."
+    },
+    "/users/{userId}/conversations/{convId}": {
+      "schema": { "$ref": "#/entities/CloudConversationRecord" },
+      "description": "Owner-only backed-up conversation list."
+    },
+    "/users/{userId}/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/CloudMessageRecord" },
+      "description": "Owner-only backed-up message history."
+    }
+  }
+}

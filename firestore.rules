@@ -1,0 +1,206 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && isValidId(userId) && request.auth.uid == userId;
+    }
+
+    function isValidStoreTheme(data) {
+      return data.creatorId is string && data.creatorId.size() >= 1 && data.creatorId.size() <= 128 &&
+             data.creatorName is string && data.creatorName.size() >= 1 && data.creatorName.size() <= 60 &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 60 &&
+             data.description is string && data.description.size() <= 180 &&
+             data.backgroundHex is int &&
+             data.iconHex is int &&
+             data.lightHex is int &&
+             data.lightEnabled is bool &&
+             data.priceUsd is int && (data.priceUsd == 0 || data.priceUsd == 1) &&
+             data.isPublished is bool;
+    }
+
+    function isValidAcquiredTheme(data) {
+      return data.themeId is string && data.themeId.size() >= 1 && data.themeId.size() <= 128 &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 60 &&
+             data.priceUsd is int && (data.priceUsd == 0 || data.priceUsd == 1) &&
+             data.backgroundHex is int &&
+             data.iconHex is int &&
+             data.lightHex is int &&
+             data.lightEnabled is bool;
+    }
+
+    function isValidAccountRecord(data, jesrId) {
+      return data.uid is string && data.uid == request.auth.uid &&
+             data.jesrId is string && data.jesrId == jesrId &&
+             data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 60 &&
+             data.ecdhPublicKey is string && data.ecdhPublicKey.size() >= 20 && data.ecdhPublicKey.size() <= 512 &&
+             data.signingPublicKey is string && data.signingPublicKey.size() >= 20 && data.signingPublicKey.size() <= 512 &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    match /store_themes/{themeId} {
+      allow get: if isSignedIn() && isValidId(themeId) && existing().isPublished == true;
+      allow list: if isSignedIn() && existing().isPublished == true;
+
+      allow create: if isSignedIn() &&
+                       isValidId(themeId) &&
+                       incoming().creatorId == request.auth.uid &&
+                       incoming().keys().hasAll([
+                         'creatorId', 'creatorName', 'title', 'description',
+                         'backgroundHex', 'iconHex', 'lightHex', 'lightEnabled',
+                         'priceUsd', 'isPublished', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'creatorId', 'creatorName', 'title', 'description',
+                         'backgroundHex', 'iconHex', 'lightHex', 'lightEnabled',
+                         'priceUsd', 'isPublished', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().createdAt is timestamp &&
+                       incoming().createdAt <= request.time &&
+                       incoming().updatedAt is timestamp &&
+                       incoming().updatedAt <= request.time &&
+                       isValidStoreTheme(incoming());
+
+      allow update: if isSignedIn() &&
+                       isValidId(themeId) &&
+                       isValidStoreTheme(incoming()) &&
+                       existing().creatorId == request.auth.uid &&
+                       incoming().creatorId == existing().creatorId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().updatedAt is timestamp &&
+                       incoming().updatedAt <= request.time &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'title', 'description', 'backgroundHex', 'iconHex',
+                         'lightHex', 'lightEnabled', 'priceUsd', 'isPublished', 'updatedAt'
+                       ]);
+
+      allow delete: if isSignedIn() &&
+                       isValidId(themeId) &&
+                       existing().creatorId == request.auth.uid;
+    }
+
+    match /accounts/{jesrId} {
+      // Exact-ID lookup allowed for signed-in users; listing all accounts is denied to prevent enumeration
+      allow get: if isSignedIn() && isValidId(jesrId);
+      allow list: if false;
+
+      allow create: if isSignedIn() &&
+                       isValidId(jesrId) &&
+                       incoming().keys().hasAll([
+                         'uid', 'jesrId', 'displayName', 'ecdhPublicKey', 'signingPublicKey', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'uid', 'jesrId', 'displayName', 'ecdhPublicKey', 'signingPublicKey', 'updatedAt'
+                       ]) &&
+                       isValidAccountRecord(incoming(), jesrId);
+
+      allow update: if isSignedIn() &&
+                       isValidId(jesrId) &&
+                       existing().uid == request.auth.uid &&
+                       incoming().uid == existing().uid &&
+                       incoming().jesrId == existing().jesrId &&
+                       isValidAccountRecord(incoming(), jesrId);
+
+      allow delete: if isSignedIn() && isValidId(jesrId) && existing().uid == request.auth.uid;
+    }
+
+    match /users/{userId}/acquired_themes/{themeId} {
+      allow get: if isOwner(userId) && isValidId(themeId);
+      allow list: if isOwner(userId);
+
+      allow create: if isOwner(userId) &&
+                       isValidId(themeId) &&
+                       incoming().keys().hasAll([
+                         'themeId', 'title', 'priceUsd',
+                         'backgroundHex', 'iconHex', 'lightHex', 'lightEnabled', 'acquiredAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'themeId', 'title', 'priceUsd',
+                         'backgroundHex', 'iconHex', 'lightHex', 'lightEnabled', 'acquiredAt'
+                       ]) &&
+                       incoming().acquiredAt is timestamp &&
+                       incoming().acquiredAt <= request.time &&
+                       isValidAcquiredTheme(incoming());
+
+      allow update: if isOwner(userId) &&
+                       isValidId(themeId) &&
+                       isValidAcquiredTheme(incoming()) &&
+                       incoming().acquiredAt == existing().acquiredAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'title', 'priceUsd', 'backgroundHex', 'iconHex', 'lightHex', 'lightEnabled'
+                       ]);
+
+      allow delete: if isOwner(userId) && isValidId(themeId);
+    }
+
+    match /users/{userId}/private/{docId} {
+      allow get, list: if isOwner(userId);
+      allow create, update: if isOwner(userId) &&
+                               isValidId(docId) &&
+                               incoming().uid == request.auth.uid &&
+                               incoming().jesrId is string && incoming().jesrId.size() >= 6 &&
+                               incoming().encryptedKeyBundle is string && incoming().encryptedKeyBundle.size() >= 20 &&
+                               incoming().ecdhPublicKey is string &&
+                               incoming().signingPublicKey is string &&
+                               incoming().displayName is string && incoming().displayName.size() <= 60 &&
+                               incoming().updatedAt is timestamp && incoming().updatedAt <= request.time;
+      allow delete: if isOwner(userId) && isValidId(docId);
+    }
+
+    match /users/{userId}/friends/{friendId} {
+      allow get, list: if isOwner(userId);
+      allow create, update: if isOwner(userId) &&
+                               isValidId(friendId) &&
+                               incoming().jesrId is string && incoming().jesrId.size() <= 64 &&
+                               incoming().displayName is string && incoming().displayName.size() <= 60 &&
+                               incoming().status is string &&
+                               incoming().updatedAt is timestamp && incoming().updatedAt <= request.time;
+      allow delete: if isOwner(userId) && isValidId(friendId);
+    }
+
+    match /users/{userId}/conversations/{convId} {
+      allow get, list: if isOwner(userId);
+      allow create, update: if isOwner(userId) &&
+                               isValidId(convId) &&
+                               incoming().convId is string &&
+                               incoming().peerName is string && incoming().peerName.size() <= 60 &&
+                               incoming().lastMessageText is string && incoming().lastMessageText.size() <= 500 &&
+                               incoming().updatedAt is timestamp && incoming().updatedAt <= request.time;
+      allow delete: if isOwner(userId) && isValidId(convId);
+    }
+
+    match /users/{userId}/messages/{messageId} {
+      allow get, list: if isOwner(userId);
+      allow create, update: if isOwner(userId) &&
+                               isValidId(messageId) &&
+                               incoming().messageId is string &&
+                               incoming().conversationId is string &&
+                               incoming().senderId is string &&
+                               incoming().recipientId is string &&
+                               incoming().text is string && incoming().text.size() <= 4000 &&
+                               incoming().updatedAt is timestamp && incoming().updatedAt <= request.time;
+      allow delete: if isOwner(userId) && isValidId(messageId);
+    }
+  }
+}
